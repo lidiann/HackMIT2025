@@ -2,8 +2,29 @@
     "manifest_version": 3,
     "name": "Test",
     "version": "1.0",
+    "permissions": [
+        "sidePanel", "tabs"
+    ],
+    "host_permissions": [
+        "https://claude.ai/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://claude.ai/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
     "action":{
-        "default_popup": "index.html",
-        "default_icon": "hello_extensions.png"
+        "default_icon": "chrome-extension/hello_extensions.png"
+    },
+    "side_panel": {
+        "default_path": "chrome-extension/sidepanel.html"
+    },
+    "background": {
+        "service_worker": "background.js"
     }
 }
