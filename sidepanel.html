@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eden - AI Sustainability Counter</title>
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🌱 Eden - AI Sustainability Counter</h1>
+            <p class="subtitle">Track your AI's environmental impact</p>
+        </header>
+
+        <div class="content">
+            <div class="info-card">
+                <h3>How it works</h3>
+                <p>Eden monitors your AI conversations and calculates the environmental impact based on token usage. Toggle monitoring on to start tracking your sustainability impact.</p>
+            </div>
+
+            <div class="current-session">
+                <h3>Current Session</h3>
+                <div class="session-metrics">
+                    <div class="metric-card-small">
+                        <div class="metric-icon">🔢</div>
+                        <div class="metric-info">
+                            <div class="metric-label">Current Tokens</div>
+                            <div class="metric-value" id="current-tokens">0</div>
+                        </div>
+                    </div>
+                    <div class="metric-card-small">
+                        <div class="metric-icon">⚡</div>
+                        <div class="metric-info">
+                            <div class="metric-label">Current Energy</div>
+                            <div class="metric-value" id="current-energy">0 kWh</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-container">
+                <div class="metric-card">
+                    <div class="metric-icon">🔢</div>
+                    <div class="metric-info">
+                        <div class="metric-label">Tokens</div>
+                        <div class="metric-value" id="total-tokens">0</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">⚡</div>
+                    <div class="metric-info">
+                        <div class="metric-label">Energy</div>
+                        <div class="metric-value" id="total-energy">0 kWh</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">🌍</div>
+                    <div class="metric-info">
+                        <div class="metric-label">Carbon</div>
+                        <div class="metric-value" id="total-carbon">0 kg CO₂</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">💧</div>
+                    <div class="metric-info">
+                        <div class="metric-label">Water</div>
+                        <div class="metric-value" id="total-water">0 L</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="toggle-section">
+                    <label class="toggle-switch-large">
+                        <input type="checkbox" id="global-monitoring-toggle">
+                        <span class="toggle-slider-large"></span>
+                    </label>
+                    <span class="toggle-label-large" id="global-toggle-label">Enable Global Monitoring</span>
+                </div>
+                <div class="button-group">
+                    <button id="reset-stats" class="btn btn-secondary">Reset Stats</button>
+                    <button id="export-data" class="btn btn-primary">Export Data</button>
+                </div>
+            </div>
+
+            <div class="status">
+                <div class="status-indicator" id="status-indicator"></div>
+                <span id="status-text">Ready to monitor</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="sidepanel.js"></script>
+</body>
+</html>
