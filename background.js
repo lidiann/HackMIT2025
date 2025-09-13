@@ -1,7 +1,7 @@
 // Background service worker for Eden - AI Sustainability Counter
 
 // Import modules
-importScripts('config.js', 'energy-calculator.js');
+importScripts('api-config.js', 'config.js', 'energy-calculator.js');
 
 // Initialize modules
 const config = new Config();

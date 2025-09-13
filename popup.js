@@ -69,13 +69,7 @@ class PopupManager {
       this.resetStats();
     });
 
-    // Configure API
-    const configureApiBtn = document.getElementById('configureApi');
-    if (configureApiBtn) {
-      configureApiBtn.addEventListener('click', () => {
-        this.showApiConfig();
-      });
-    }
+    // API configuration removed - using environment variable
 
     // Listen for updates from content script
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -182,23 +176,7 @@ class PopupManager {
     }
   }
 
-  showApiConfig() {
-    const apiKey = prompt('Enter your Anthropic API key (starts with sk-ant-):');
-    
-    if (apiKey) {
-      // Send to background script to save
-      chrome.runtime.sendMessage({
-        action: 'setApiKey',
-        apiKey: apiKey
-      }, (response) => {
-        if (response && response.success) {
-          this.updateStatus('API key saved successfully!', 'success');
-        } else {
-          this.updateStatus('Failed to save API key', 'error');
-        }
-      });
-    }
-  }
+  // API configuration removed - using environment variable
 
   updateStatus(message, type = 'info') {
     const status = document.getElementById('status');
