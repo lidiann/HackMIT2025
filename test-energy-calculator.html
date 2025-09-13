@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eden Energy Calculator Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .results {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .metric-value {
+            font-family: 'Monaco', 'Menlo', monospace;
+            color: #495057;
+        }
+        .breakdown {
+            margin-top: 16px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .breakdown h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .formula {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            margin: 8px 0;
+            border-left: 4px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Eden Energy Calculator Test</h1>
+        
+        <div class="input-group">
+            <label for="textInput">Enter text to analyze:</label>
+            <textarea id="textInput" rows="4" placeholder="Type your text here to see the environmental impact..."></textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="tokenCount">Or enter token count directly:</label>
+            <input type="number" id="tokenCount" placeholder="Enter token count">
+        </div>
+        
+        <button onclick="calculateImpact()">Calculate Impact</button>
+        <button onclick="showFormulas()">Show Formulas</button>
+        <button onclick="showMultipliers()">Show Multipliers</button>
+        <button onclick="showEstimates()">Show Current Estimates</button>
+        <button onclick="showModelClasses()">Show Model Classes</button>
+        
+        <div id="results" class="results" style="display: none;">
+            <h3>Environmental Impact Results</h3>
+            <div id="metrics"></div>
+            <div id="breakdown"></div>
+        </div>
+        
+        <div id="formulas" class="results" style="display: none;">
+            <h3>Environmental Impact Formulas</h3>
+            <div class="formula">
+                <strong>Energy per Query (kWh):</strong><br>
+                E_query = (Total inference time) × (Total power) × PUE<br>
+                Where:<br>
+                • Total inference time = (Output Length / TPS + Latency) / 3600<br>
+                • Total power = (P_GPU × U_GPU) + (P_non-GPU × U_non-GPU)
+            </div>
+            <div class="formula">
+                <strong>Water Usage (L):</strong><br>
+                Water = (E_query / PUE) × WUE_site + E_query × WUE_source<br>
+                Where:<br>
+                • WUE_site = On-site cooling water usage<br>
+                • WUE_source = Off-site electricity generation water usage
+            </div>
+            <div class="formula">
+                <strong>Carbon Emissions (kg CO₂e):</strong><br>
+                Carbon = E_query × CIF<br>
+                Where:<br>
+                • CIF = Carbon Intensity Factor
+            </div>
+        </div>
+        
+        <div id="multipliers" class="results" style="display: none;">
+            <h3>Claude's Environmental Multipliers</h3>
+            <div id="multiplierData"></div>
+        </div>
+        
+        <div id="estimates" class="results" style="display: none;">
+            <h3>Current Estimates & Data Needs</h3>
+            <div id="estimateData"></div>
+        </div>
+        
+        <div id="modelClasses" class="results" style="display: none;">
+            <h3>Claude Model Classes & Hardware</h3>
+            <div id="modelClassData"></div>
+        </div>
+    </div>
+
+    <script src="energy-calculator.js"></script>
+    <script>
+        const calculator = new EnergyCalculator();
+        
+        function calculateImpact() {
+            const textInput = document.getElementById('textInput').value;
+            const tokenCountInput = document.getElementById('tokenCount').value;
+            
+            let tokens;
+            if (tokenCountInput) {
+                tokens = parseInt(tokenCountInput);
+            } else if (textInput) {
+                // Simple token estimation
+                const words = textInput.split(/\s+/).length;
+                const chars = textInput.length;
+                tokens = Math.max(words, Math.ceil(chars / 4));
+            } else {
+                alert('Please enter text or token count');
+                return;
+            }
+            
+            const impact = calculator.calculateEnvironmentalImpact(tokens);
+            displayResults(impact);
+        }
+        
+        function displayResults(impact) {
+            const resultsDiv = document.getElementById('results');
+            const metricsDiv = document.getElementById('metrics');
+            const breakdownDiv = document.getElementById('breakdown');
+            
+            metricsDiv.innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">Tokens</span>
+                    <span class="metric-value">${impact.tokens.toLocaleString()}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Energy</span>
+                    <span class="metric-value">${impact.energy.total.toFixed(6)} kWh</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Water</span>
+                    <span class="metric-value">${impact.water.total.toFixed(3)} L</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Carbon</span>
+                    <span class="metric-value">${impact.carbon.total.toFixed(6)} kg CO₂e</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Inference Time</span>
+                    <span class="metric-value">${(impact.energy.inferenceTime * 3600).toFixed(2)}s</span>
+                </div>
+            `;
+            
+            breakdownDiv.innerHTML = `
+                <div class="breakdown">
+                    <h3>Energy Breakdown</h3>
+                    <div class="metric">
+                        <span class="metric-label">GPU Power</span>
+                        <span class="metric-value">${impact.energy.powerBreakdown.gpuPower}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Non-GPU Power</span>
+                        <span class="metric-value">${impact.energy.powerBreakdown.nonGpuPower}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Power</span>
+                        <span class="metric-value">${impact.energy.powerBreakdown.totalPower}W</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">PUE</span>
+                        <span class="metric-value">${impact.energy.powerBreakdown.pue}</span>
+                    </div>
+                </div>
+                <div class="breakdown">
+                    <h3>Water Breakdown</h3>
+                    <div class="metric">
+                        <span class="metric-label">On-site Water</span>
+                        <span class="metric-value">${impact.water.onsite.toFixed(3)} L</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Off-site Water</span>
+                        <span class="metric-value">${impact.water.offsite.toFixed(3)} L</span>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.style.display = 'block';
+        }
+        
+        function showFormulas() {
+            const formulasDiv = document.getElementById('formulas');
+            formulasDiv.style.display = formulasDiv.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function showMultipliers() {
+            const multipliersDiv = document.getElementById('multipliers');
+            const multiplierDataDiv = document.getElementById('multiplierData');
+            
+            const multipliers = calculator.getMultipliers();
+            
+            multiplierDataDiv.innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">PUE (Power Usage Effectiveness)</span>
+                    <span class="metric-value">${multipliers.pue} kW</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">WUE On-site</span>
+                    <span class="metric-value">${multipliers.wueOnsite} L/kWh</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">WUE Off-site</span>
+                    <span class="metric-value">${multipliers.wueOffsite} L/kWh</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">CIF (Carbon Intensity Factor)</span>
+                    <span class="metric-value">${multipliers.cif} kg CO₂e/kWh</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">GPU Power</span>
+                    <span class="metric-value">${multipliers.gpuPower}W</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">GPU Utilization</span>
+                    <span class="metric-value">${(multipliers.gpuUtilization * 100).toFixed(1)}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Non-GPU Power</span>
+                    <span class="metric-value">${multipliers.nonGpuPower}W</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Non-GPU Utilization</span>
+                    <span class="metric-value">${(multipliers.nonGpuUtilization * 100).toFixed(1)}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Tokens per Second</span>
+                    <span class="metric-value">${multipliers.tokensPerSecond}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Latency</span>
+                    <span class="metric-value">${multipliers.latency}s</span>
+                </div>
+            `;
+            
+            multipliersDiv.style.display = multipliersDiv.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function showEstimates() {
+            const estimatesDiv = document.getElementById('estimates');
+            const estimateDataDiv = document.getElementById('estimateData');
+            
+            const estimates = calculator.getCurrentEstimates();
+            
+            estimateDataDiv.innerHTML = `
+                <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 4px solid #ffc107;">
+                    <strong>${estimates.warning}</strong>
+                </div>
+                
+                <h4>Current Hardware Estimates:</h4>
+                <div class="metric">
+                    <span class="metric-label">GPU Power</span>
+                    <span class="metric-value">${estimates.hardware.gpuPower}W (estimated)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">GPU Utilization</span>
+                    <span class="metric-value">${(estimates.hardware.gpuUtilization * 100).toFixed(1)}% (estimated)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Non-GPU Power</span>
+                    <span class="metric-value">${estimates.hardware.nonGpuPower}W (estimated)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Non-GPU Utilization</span>
+                    <span class="metric-value">${(estimates.hardware.nonGpuUtilization * 100).toFixed(1)}% (estimated)</span>
+                </div>
+                
+                <h4>Current Performance Estimates:</h4>
+                <div class="metric">
+                    <span class="metric-label">Tokens per Second</span>
+                    <span class="metric-value">${estimates.performance.tokensPerSecond} (estimated)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Latency</span>
+                    <span class="metric-value">${estimates.performance.latency}s (estimated)</span>
+                </div>
+                
+                <h4>Environmental Multipliers (Real Data):</h4>
+                <div class="metric">
+                    <span class="metric-label">PUE</span>
+                    <span class="metric-value">${estimates.environmental.pue} (Claude's data)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">WUE On-site</span>
+                    <span class="metric-value">${estimates.environmental.wueOnsite} L/kWh (Claude's data)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">WUE Off-site</span>
+                    <span class="metric-value">${estimates.environmental.wueOffsite} L/kWh (Claude's data)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">CIF</span>
+                    <span class="metric-value">${estimates.environmental.cif} kg CO₂e/kWh (Claude's data)</span>
+                </div>
+                
+                <h4>Data We Need to Get:</h4>
+                <ul style="color: #dc3545;">
+                    ${estimates.needsRealData.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+                
+                <div style="background: #d1ecf1; padding: 12px; border-radius: 6px; margin-top: 16px; border-left: 4px solid #17a2b8;">
+                    <strong>How to get real data:</strong><br>
+                    1. Contact Anthropic for Claude Sonnet 4 performance specs<br>
+                    2. Measure actual inference times and power consumption<br>
+                    3. Use the updateWithRealClaudeData() method to update these values
+                </div>
+            `;
+            
+            estimatesDiv.style.display = estimatesDiv.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function showModelClasses() {
+            const modelClassesDiv = document.getElementById('modelClasses');
+            const modelClassDataDiv = document.getElementById('modelClassData');
+            
+            modelClassDataDiv.innerHTML = `
+                <div style="background: #d4edda; padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 4px solid #28a745;">
+                    <strong>✅ Real Hardware Data:</strong> Claude uses DGX H200/H100 with research-based utilization rates
+                </div>
+                
+                <h4>Current Configuration:</h4>
+                <div class="metric">
+                    <span class="metric-label">Model Class</span>
+                    <span class="metric-value">${calculator.MODEL_CLASS}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">GPU Count</span>
+                    <span class="metric-value">${calculator.GPU_COUNT} H100 GPUs</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">GPU Utilization</span>
+                    <span class="metric-value">${(calculator.U_GPU * 100).toFixed(2)}%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Non-GPU Utilization</span>
+                    <span class="metric-value">${(calculator.U_NON_GPU * 100).toFixed(2)}%</span>
+                </div>
+                
+                <h4>Available Model Classes:</h4>
+                <div style="font-size: 12px; color: #6c757d;">
+                    Based on Table 2: Estimated node-level GPU and non-GPU utilization by model class
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Nano</span>
+                    <span class="metric-value">1 GPU, 1.0% util</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Micro</span>
+                    <span class="metric-value">1 GPU, 1.25% util</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Small</span>
+                    <span class="metric-value">2 GPUs, 2.5% util</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Medium</span>
+                    <span class="metric-value">4 GPUs, 4.5% util</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Large</span>
+                    <span class="metric-value">8 GPUs, 6.0% util (current)</span>
+                </div>
+            `;
+            
+            modelClassesDiv.style.display = modelClassesDiv.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

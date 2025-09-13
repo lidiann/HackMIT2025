@@ -1,7 +1,13 @@
 // Background service worker for Eden - AI Sustainability Counter
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages/count_tokens';
 
-// Listen for messages from content script
+// Import modules
+importScripts('config.js', 'energy-calculator.js');
+
+// Initialize modules
+const config = new Config();
+const energyCalculator = new EnergyCalculator();
+
+// Listen for messages from content script and popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'countTokens') {
     countTokens(request.text)
@@ -13,6 +19,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       });
     return true; // Keep message channel open for async response
+  } else if (request.action === 'setApiKey') {
+    config.setApiKey(request.apiKey)
+      .then(success => {
+        sendResponse({ success: success });
+      })
+      .catch(error => {
+        console.error('API key save error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true;
   }
 });
 
@@ -76,27 +92,69 @@ chrome.sidePanel.onPanelHidden.addListener(({ tabId }) => {
   console.log('Side panel hidden for tab:', tabId);
 });
 
-// Count tokens using Anthropic API
+// Count tokens and calculate environmental impact
 async function countTokens(text) {
   try {
-    // For demo purposes, we'll use a simple estimation
-    // In production, you'd call the actual Anthropic API
-    const estimatedTokens = estimateTokens(text);
+    let tokenCount;
     
-    // Calculate energy, carbon, and water usage
-    const energy = calculateEnergy(estimatedTokens);
-    const carbon = calculateCarbon(energy);
-    const water = calculateWater(energy);
+    // Try to use real Anthropic API if configured
+    if (config.isApiKeyConfigured()) {
+      try {
+        tokenCount = await countTokensWithAPI(text);
+        console.log(`Real token count from API: ${tokenCount}`);
+      } catch (apiError) {
+        console.warn('API call failed, falling back to estimation:', apiError);
+        tokenCount = estimateTokens(text);
+      }
+    } else {
+      // Fall back to estimation if no API key
+      tokenCount = estimateTokens(text);
+      console.log(`Estimated token count: ${tokenCount}`);
+    }
+    
+    // Calculate comprehensive environmental impact using the energy calculator
+    const impact = energyCalculator.calculateEnvironmentalImpact(tokenCount);
     
     return {
-      tokens: estimatedTokens,
-      energy: energy,
-      carbon: carbon,
-      water: water
+      tokens: impact.tokens,
+      energy: impact.energy.total,
+      carbon: impact.carbon.total,
+      water: impact.water.total,
+      inferenceTime: impact.energy.inferenceTime,
+      breakdown: {
+        energy: impact.energy,
+        water: impact.water,
+        carbon: impact.carbon,
+        multipliers: impact.multipliers
+      }
     };
   } catch (error) {
     throw new Error(`Failed to count tokens: ${error.message}`);
   }
+}
+
+// Count tokens using Anthropic API
+async function countTokensWithAPI(text) {
+  const response = await fetch(config.getTokenCountUrl(), {
+    method: 'POST',
+    headers: config.getApiHeaders(),
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      messages: [
+        {
+          role: 'user',
+          content: text
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.usage?.input_tokens || 0;
 }
 
 // Simple token estimation (rough approximation)
@@ -106,23 +164,4 @@ function estimateTokens(text) {
   const words = text.split(/\s+/).length;
   const chars = text.length;
   return Math.max(words, Math.ceil(chars / 4));
-}
-
-// Calculate energy usage (kWh per 1M tokens)
-function calculateEnergy(tokens) {
-  // Based on research: ~0.002 kWh per 1M tokens for GPT-3.5
-  // Claude might be similar, this is an approximation
-  return (tokens / 1000000) * 0.002;
-}
-
-// Calculate carbon emissions (kg CO2 per kWh)
-function calculateCarbon(energy) {
-  // Average US grid carbon intensity: ~0.4 kg CO2 per kWh
-  return energy * 0.4;
-}
-
-// Calculate water usage (liters per kWh)
-function calculateWater(energy) {
-  // Average water usage for data centers: ~1.5 liters per kWh
-  return energy * 1.5;
 }

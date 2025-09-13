@@ -69,6 +69,14 @@ class PopupManager {
       this.resetStats();
     });
 
+    // Configure API
+    const configureApiBtn = document.getElementById('configureApi');
+    if (configureApiBtn) {
+      configureApiBtn.addEventListener('click', () => {
+        this.showApiConfig();
+      });
+    }
+
     // Listen for updates from content script
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'updateStats') {
@@ -171,6 +179,24 @@ class PopupManager {
       
       this.updateDisplay();
       this.updateStatus('Stats reset!', 'success');
+    }
+  }
+
+  showApiConfig() {
+    const apiKey = prompt('Enter your Anthropic API key (starts with sk-ant-):');
+    
+    if (apiKey) {
+      // Send to background script to save
+      chrome.runtime.sendMessage({
+        action: 'setApiKey',
+        apiKey: apiKey
+      }, (response) => {
+        if (response && response.success) {
+          this.updateStatus('API key saved successfully!', 'success');
+        } else {
+          this.updateStatus('Failed to save API key', 'error');
+        }
+      });
     }
   }
 
