@@ -90,7 +90,7 @@ export const AIUsageDashboard = () => {
             </p>
 
             {/* Capture indicator */}
-            <div className="mb-2 text-xs text-gray-600">
+            {/* <div className="mb-2 text-xs text-gray-600">
               {(() => {
                 const now = new Date();
                 const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
@@ -103,10 +103,10 @@ export const AIUsageDashboard = () => {
                   </span>
                 );
               })()}
-            </div>
+            </div> */}
 
             {/* Quick test button to generate sample metrics */}
-            <div className="mb-2">
+            {/* <div className="mb-2">
               <Button
                 size="sm"
                 variant="default"
@@ -121,7 +121,7 @@ export const AIUsageDashboard = () => {
               >
                 {isLoading ? "Running…" : "Run Test Prompt"}
               </Button>
-            </div>
+            </div> */}
 
             {/* Time Period Tabs */}
             <div className="flex text-xs">
