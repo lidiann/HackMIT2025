@@ -93,19 +93,16 @@ class Config {
   }
 
   getTokenCountUrl() {
-    return this.baseUrl + this.tokenCountEndpoint;
+    // Use your deployed Render API instead of localhost
+    return 'https://hackmit2025-pf5p.onrender.com/count';
   }
 
   // Get headers for API requests
   getApiHeaders() {
-    if (!this.isApiKeyConfigured()) {
-      throw new Error('API key not configured');
-    }
-
+    // For deployed API, we don't need to send the API key from the extension
+    // The API key is stored securely on the server
     return {
-      'Content-Type': 'application/json',
-      'x-api-key': this.apiKey,
-      'anthropic-version': '2023-06-01'
+      'Content-Type': 'application/json'
     };
   }
 
