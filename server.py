@@ -40,16 +40,16 @@ app.add_middleware(
 class CountReq(BaseModel):
     text: str
     model: str = "claude-3-5-haiku-20241022"   # pick a default
-    expected_output_tokens: int | None = None  # optional
+    expected_output_tokens: Optional[int] = None  # optional
 
 class CountRes(BaseModel):
     tokens_input: int
     tokens_output_estimate: int
     tokens_total_estimate: int
-    wh_per_token: float | None = None
-    kwh: float | None = None
-    co2_kg: float | None = None
-    water_l: float | None = None
+    wh_per_token: Optional[float] = None
+    kwh: Optional[float] = None
+    co2_kg: Optional[float] = None
+    water_l: Optional[float] = None
 
 ANTHROPIC_BASE_COUNT = "https://api.anthropic.com/v1/messages/count_tokens"
 
