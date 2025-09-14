@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'https://hackmit2025-pf5p.onrender.com';
+const API_BASE_URL = "https://hackmit2025-pf5p.onrender.com";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -15,9 +15,13 @@ export interface TokenCountRequest {
   expected_output_tokens: number;
 }
 
+// Matches backend /count response
 export interface TokenCountResponse {
-  tokens: number;
-  energy_kwh: number;
+  tokens_input: number;
+  tokens_output_estimate: number;
+  tokens_total_estimate: number;
+  wh_per_token?: number;
+  kwh: number;
   co2_kg: number;
   water_l: number;
 }
@@ -31,7 +35,8 @@ export interface UsageStats {
 }
 
 // Check if we're in a Chrome extension context
-const isChromeExtension = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id;
+const isChromeExtension =
+  typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id;
 
 export const apiService = {
   // Count tokens and get environmental impact
@@ -39,22 +44,25 @@ export const apiService = {
     if (isChromeExtension) {
       // Use Chrome extension messaging for API calls
       return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({
-          action: 'countTokens',
-          text: data.text,
-          model: data.model,
-          expectedOutputTokens: data.expected_output_tokens
-        }, (response) => {
-          if (response && response.success) {
-            resolve(response.data);
-          } else {
-            reject(new Error(response?.error || 'Failed to count tokens'));
+        chrome.runtime.sendMessage(
+          {
+            action: "countTokens",
+            text: data.text,
+            model: data.model,
+            expectedOutputTokens: data.expected_output_tokens,
+          },
+          (response) => {
+            if (response && response.success) {
+              resolve(response.data);
+            } else {
+              reject(new Error(response?.error || "Failed to count tokens"));
+            }
           }
-        });
+        );
       });
     } else {
       // Use direct API calls for web version
-      const response = await api.post<TokenCountResponse>('/count', data);
+      const response = await api.post<TokenCountResponse>("/count", data);
       return response.data;
     }
   },
@@ -65,7 +73,7 @@ export const apiService = {
       // For Chrome extension, we'll assume it's healthy if we can send messages
       return { ok: true };
     } else {
-      const response = await api.get<{ ok: boolean }>('/health');
+      const response = await api.get<{ ok: boolean }>("/health");
       return response.data;
     }
   },

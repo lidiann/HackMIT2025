@@ -11,11 +11,12 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 // Determine if we're in a Chrome extension context
-const isChromeExtension = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id;
+const isChromeExtension =
+  typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id;
 
 const App = () => {
   const Router = isChromeExtension ? MemoryRouter : BrowserRouter;
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

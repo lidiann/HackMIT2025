@@ -8,53 +8,61 @@ import { Cloud, Droplet, Lightbulb, Home, Shield, Leaf } from "lucide-react";
 export const AIUsageDashboard = () => {
   const [activeTab, setActiveTab] = useState("Today");
   const location = useLocation();
-  const { getFilteredData, getTotals } = useAIUsage();
-  
+  const { usageHistory, getFilteredData, getTotals, countTokens, isLoading } =
+    useAIUsage();
+
   const tabs = ["Today", "Past Week", "Past Month"];
-  
+
   // Get real data based on selected time period
   const getMetricsData = () => {
-    const filteredData = getFilteredData(activeTab as 'Today' | 'Past Week' | 'Past Month');
+    const filteredData = getFilteredData(
+      activeTab as "Today" | "Past Week" | "Past Month"
+    );
     const totals = filteredData.reduce(
       (acc, usage) => ({
-        co2_kg: acc.co2_kg + usage.co2_kg,
-        water_l: acc.water_l + usage.water_l,
-        energy_kwh: acc.energy_kwh + usage.energy_kwh,
-        tokens: acc.tokens + usage.tokens,
+        co2_kg: acc.co2_kg + (usage.co2_kg || 0),
+        water_l: acc.water_l + (usage.water_l || 0),
+        energy_kwh: acc.energy_kwh + (usage.energy_kwh || 0),
+        tokens_total_estimate:
+          acc.tokens_total_estimate + (usage.tokens_total_estimate || 0),
       }),
-      { co2_kg: 0, water_l: 0, energy_kwh: 0, tokens: 0 }
+      { co2_kg: 0, water_l: 0, energy_kwh: 0, tokens_total_estimate: 0 }
     );
 
     // Get latest usage for KPI
     const latestUsage = filteredData[0];
 
     return {
-      co2: { 
-        value: totals.co2_kg.toFixed(6), 
-        unit: "KgCO₂", 
-        label: "CO₂ Emissions" 
+      co2: {
+        value: totals.co2_kg.toFixed(6),
+        unit: "KgCO₂",
+        label: "CO₂ Emissions",
       },
-      water: { 
-        value: totals.water_l.toFixed(2), 
-        unit: "Litres", 
-        label: "Water Used", 
-        description: `${Math.round(totals.water_l * 2)} water bottles used` 
+      water: {
+        value: totals.water_l.toFixed(2),
+        unit: "Litres",
+        label: "Water Used",
+        description: `${Math.round(totals.water_l * 2)} water bottles used`,
       },
-      energy: { 
-        value: totals.energy_kwh.toFixed(3), 
-        unit: "kWh", 
-        label: "Energy Consumed", 
-        description: `Can Power ${Math.round(totals.energy_kwh * 3.33)} Light Bulbs` 
+      energy: {
+        value: totals.energy_kwh.toFixed(3),
+        unit: "kWh",
+        label: "Energy Consumed",
+        description: `Can Power ${Math.round(
+          totals.energy_kwh * 3.33
+        )} Light Bulbs`,
       },
-      kpi: latestUsage ? {
-        tokensIn: `${latestUsage.co2_kg.toFixed(6)} KgCO₂`,
-        tokensOut: `${latestUsage.water_l.toFixed(2)} L`,
-        additional: `${latestUsage.energy_kwh.toFixed(6)} kWh`
-      } : {
-        tokensIn: "0.000000 KgCO₂",
-        tokensOut: "0.00 L",
-        additional: "0.000000 kWh"
-      }
+      kpi: latestUsage
+        ? {
+            tokensIn: `${latestUsage.tokens_input ?? 0}`,
+            tokensOut: `${latestUsage.tokens_output_estimate ?? 0}`,
+            additional: `${latestUsage.tokens_total_estimate ?? 0} total`,
+          }
+        : {
+            tokensIn: "0",
+            tokensOut: "0",
+            additional: "0 total",
+          },
     };
   };
 
@@ -63,7 +71,7 @@ export const AIUsageDashboard = () => {
   const navItems = [
     { icon: Home, path: "/" },
     { icon: Shield, path: "/security" },
-    { icon: Leaf, path: "/eco-garden" }
+    { icon: Leaf, path: "/eco-garden" },
   ];
 
   return (
@@ -76,11 +84,45 @@ export const AIUsageDashboard = () => {
             <div className="mb-3">
               <h1 className="text-lg font-medium text-gray-800">Welcome</h1>
             </div>
-            
+
             <p className="text-sm text-gray-600 mb-4">
               Automatically tracking your Claude.ai environmental impact
             </p>
-            
+
+            {/* Capture indicator */}
+            <div className="mb-2 text-xs text-gray-600">
+              {(() => {
+                const now = new Date();
+                const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
+                const lastHourCount = (usageHistory || []).filter(
+                  (u) => u.timestamp >= lastHour
+                ).length;
+                return (
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
+                    {lastHourCount} captured in last hour
+                  </span>
+                );
+              })()}
+            </div>
+
+            {/* Quick test button to generate sample metrics */}
+            <div className="mb-2">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() =>
+                  countTokens(
+                    "Quick test prompt to verify dashboard updates.",
+                    "claude-3-5-haiku-20241022",
+                    200
+                  )
+                }
+                disabled={isLoading}
+              >
+                {isLoading ? "Running…" : "Run Test Prompt"}
+              </Button>
+            </div>
+
             {/* Time Period Tabs */}
             <div className="flex text-xs">
               {tabs.map((tab, index) => (
@@ -88,8 +130,8 @@ export const AIUsageDashboard = () => {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-2 py-1 mr-4 ${
-                    activeTab === tab 
-                      ? "text-gray-800 border-b border-gray-800" 
+                    activeTab === tab
+                      ? "text-gray-800 border-b border-gray-800"
                       : "text-gray-500"
                   }`}
                 >
@@ -112,7 +154,7 @@ export const AIUsageDashboard = () => {
                 <div className="text-xs text-gray-500">{metrics.co2.label}</div>
               </div>
             </div>
-            
+
             <div className="extension-card flex items-center gap-4">
               <div className="metric-icon-large flex items-center justify-center">
                 <div className="flex space-x-0.5">
@@ -125,11 +167,15 @@ export const AIUsageDashboard = () => {
                 <div className="text-xl font-medium text-gray-800">
                   {metrics.water.value} {metrics.water.unit}
                 </div>
-                <div className="text-xs text-gray-500">{metrics.water.label}</div>
-                <div className="text-xs text-gray-400">{metrics.water.description}</div>
+                <div className="text-xs text-gray-500">
+                  {metrics.water.label}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {metrics.water.description}
+                </div>
               </div>
             </div>
-            
+
             <div className="extension-card flex items-center gap-4">
               <div className="metric-icon-large flex items-center justify-center">
                 <div className="flex space-x-0.5">
@@ -142,28 +188,40 @@ export const AIUsageDashboard = () => {
                 <div className="text-xl font-medium text-gray-800">
                   {metrics.energy.value} {metrics.energy.unit}
                 </div>
-                <div className="text-xs text-gray-500">{metrics.energy.label}</div>
-                <div className="text-xs text-gray-400">{metrics.energy.description}</div>
+                <div className="text-xs text-gray-500">
+                  {metrics.energy.label}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {metrics.energy.description}
+                </div>
               </div>
             </div>
           </div>
 
           {/* KPIs Section */}
           <div className="extension-card">
-            <h3 className="text-sm font-medium text-gray-800 mb-3">KPIs For Your Latest Prompt</h3>
-            
+            <h3 className="text-sm font-medium text-gray-800 mb-3">
+              KPIs For Your Latest Prompt
+            </h3>
+
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <div className="text-xs text-gray-500 mb-1">Tokens in</div>
-                <div className="text-sm font-medium text-gray-800">{metrics.kpi.tokensIn}</div>
+                <div className="text-sm font-medium text-gray-800">
+                  {metrics.kpi.tokensIn}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500 mb-1">Tokens out</div>
-                <div className="text-sm font-medium text-gray-800">{metrics.kpi.tokensOut}</div>
+                <div className="text-sm font-medium text-gray-800">
+                  {metrics.kpi.tokensOut}
+                </div>
               </div>
             </div>
             <div className="text-center mt-2">
-              <div className="text-sm font-medium text-gray-800">{metrics.kpi.additional}</div>
+              <div className="text-sm font-medium text-gray-800">
+                {metrics.kpi.additional}
+              </div>
             </div>
           </div>
         </div>
@@ -174,7 +232,7 @@ export const AIUsageDashboard = () => {
         {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
-          
+
           return (
             <Link key={index} to={item.path}>
               <div
