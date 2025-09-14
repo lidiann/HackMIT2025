@@ -6,6 +6,10 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import re
 from typing import Optional, List, Dict, Any
+import time
+from fastapi.responses import StreamingResponse
+import io, csv
+
 
 load_dotenv()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -53,6 +57,39 @@ ANTHROPIC_BASE_COUNT = "https://api.anthropic.com/v1/messages/count_tokens"
 WH_PER_TOKEN = 0.05
 KGCO2_PER_KWH = 0.40
 WUE_L_PER_KWH = 1.8
+
+# ------------------------
+# In-memory session store (no prompt text)
+# ------------------------
+SESSIONS: Dict[str, Dict[str, Any]] = {}
+SESSION_TTL_SECONDS = 24 * 60 * 60  # 24h
+
+def _now() -> int:
+    return int(time.time())
+
+def _evict_expired_sessions():
+    now = _now()
+    stale = [sid for sid, rec in SESSIONS.items() if now - rec.get("updated_at", now) > SESSION_TTL_SECONDS]
+    for sid in stale:
+        SESSIONS.pop(sid, None)
+
+def _impact_from_tokens(total_tokens: int) -> Dict[str, float]:
+    kwh = (total_tokens * WH_PER_TOKEN) / 1000.0
+    return {
+        "kwh": round(kwh, 6),
+        "co2_kg": round(kwh * KGCO2_PER_KWH, 6),
+        "water_l": round(kwh * WUE_L_PER_KWH, 6),
+    }
+
+def _impact_summary(rec: Dict[str, Any]) -> Dict[str, float]:
+    return {
+        "tokens_input": rec["totals"]["tokens_input"],
+        "tokens_total": rec["totals"]["tokens_total"],
+        "kwh": round(rec["totals"]["kwh"], 6),
+        "co2_kg": round(rec["totals"]["co2_kg"], 6),
+        "water_l": round(rec["totals"]["water_l"], 6),
+    }
+
 
 @app.post("/count", response_model=CountRes)
 async def count_tokens(req: CountReq):
@@ -318,3 +355,186 @@ async def score_prompt(req: ScoreReq):
         suggestions=suggestions,
         details=details
     )
+
+# ------------------------
+# Session Totals
+# ------------------------
+class SessionIngestReq(BaseModel):
+    session_id: str
+    tokens_input: int
+    tokens_total: int
+    ts: Optional[int] = None  # optional, server fills if missing
+
+class SessionTotalsRes(BaseModel):
+    session_id: str
+    totals: Dict[str, float]
+    started_at: int
+    updated_at: int
+
+class SessionMetricsRes(BaseModel):
+    session_id: str
+    totals: Dict[str, float]
+    turns: List[Dict[str, Any]]
+    started_at: int
+    updated_at: int
+
+@app.post("/session/ingest", response_model=SessionTotalsRes)
+def session_ingest(req: SessionIngestReq):
+    _evict_expired_sessions()
+    sid = req.session_id.strip()
+    if not sid:
+        raise HTTPException(status_code=400, detail="session_id required")
+
+    ts = req.ts or _now()
+    rec = SESSIONS.get(sid)
+    if not rec:
+        rec = {
+            "started_at": ts,
+            "updated_at": ts,
+            "totals": {"tokens_input": 0, "tokens_total": 0, "kwh": 0.0, "co2_kg": 0.0, "water_l": 0.0},
+            "turns": [],  # [{turn_index, ts, tokens_input, tokens_total, kwh, co2_kg, water_l}]
+        }
+        SESSIONS[sid] = rec
+
+    turn_index = len(rec["turns"]) + 1
+    per_turn = {
+        "turn_index": turn_index,
+        "ts": ts,
+        "tokens_input": int(req.tokens_input),
+        "tokens_total": int(req.tokens_total),
+        **_impact_from_tokens(int(req.tokens_total)),
+    }
+    rec["turns"].append(per_turn)
+
+    rec["totals"]["tokens_input"] += per_turn["tokens_input"]
+    rec["totals"]["tokens_total"] += per_turn["tokens_total"]
+    rec["totals"]["kwh"] += per_turn["kwh"]
+    rec["totals"]["co2_kg"] += per_turn["co2_kg"]
+    rec["totals"]["water_l"] += per_turn["water_l"]
+    rec["updated_at"] = ts
+
+    return SessionTotalsRes(
+        session_id=sid,
+        totals=_impact_summary(rec),
+        started_at=rec["started_at"],
+        updated_at=rec["updated_at"],
+    )
+
+@app.get("/session/metrics", response_model=SessionMetricsRes)
+def session_metrics(session_id: str):
+    _evict_expired_sessions()
+    sid = session_id.strip()
+    rec = SESSIONS.get(sid)
+    if not rec:
+        raise HTTPException(status_code=404, detail="Unknown session_id")
+    return SessionMetricsRes(
+        session_id=sid,
+        totals=_impact_summary(rec),
+        turns=rec["turns"],
+        started_at=rec["started_at"],
+        updated_at=rec["updated_at"],
+    )
+
+class SessionResetReq(BaseModel):
+    session_id: str
+
+@app.post("/session/reset")
+def session_reset(req: SessionResetReq):
+    SESSIONS.pop(req.session_id, None)
+    return {"ok": True}
+
+
+# ------------------------
+# What-if Scenarios
+# ------------------------
+class WhatIfReq(BaseModel):
+    tokens_input: int
+    tokens_output: int
+    trim_pct: float = 0.0              # 0..1, reduces input tokens
+    smaller_model_factor: float = 1.0  # 0..1, multiplies output tokens (e.g., 0.6)
+    cache_hit_pct: float = 0.0         # 0..1, reduces total tokens proportionally
+
+class WhatIfRes(BaseModel):
+    baseline: Dict[str, float]
+    scenarios: Dict[str, Dict[str, Any]]
+
+def _impact_pack(total_tokens: int) -> Dict[str, float]:
+    d = _impact_from_tokens(total_tokens)
+    return {"tokens_total": total_tokens, **d}
+
+def _delta(after: Dict[str, float], before: Dict[str, float]) -> Dict[str, float]:
+    return {
+        "tokens_total": after["tokens_total"] - before["tokens_total"],
+        "kwh": round(after["kwh"] - before["kwh"], 6),
+        "co2_kg": round(after["co2_kg"] - before["co2_kg"], 6),
+        "water_l": round(after["water_l"] - before["water_l"], 6),
+    }
+
+@app.post("/whatif", response_model=WhatIfRes)
+def whatif(req: WhatIfReq):
+    # Baseline
+    baseline_total = int(req.tokens_input) + int(req.tokens_output)
+    baseline = _impact_pack(baseline_total)
+
+    # Trim → affects input
+    trimmed_input = max(0, int(req.tokens_input * (1.0 - req.trim_pct)))
+    trim_total = trimmed_input + req.tokens_output
+    trim = _impact_pack(trim_total)
+    trim["delta"] = _delta(trim, baseline)
+
+    # Smaller model → affects output
+    smaller_output = max(0, int(req.tokens_output * float(req.smaller_model_factor)))
+    small_total = req.tokens_input + smaller_output
+    small = _impact_pack(small_total)
+    small["delta"] = _delta(small, baseline)
+
+    # Cache → proportional reduction on total
+    cached_total = max(0, int(baseline_total * (1.0 - req.cache_hit_pct)))
+    cache = _impact_pack(cached_total)
+    cache["delta"] = _delta(cache, baseline)
+
+    # Combined: trim → smaller → cache
+    combined_total = trimmed_input + smaller_output
+    combined_total = max(0, int(combined_total * (1.0 - req.cache_hit_pct)))
+    combined = _impact_pack(combined_total)
+    combined["delta"] = _delta(combined, baseline)
+
+    return WhatIfRes(
+        baseline=baseline,
+        scenarios={"trim": trim, "smaller_model": small, "cache": cache, "combined": combined},
+    )
+
+
+# ------------------------
+# Metrics Export (CSV/JSON)
+# ------------------------
+@app.get("/session/export")
+def session_export(session_id: str, format: str = "json"):
+    _evict_expired_sessions()
+    sid = session_id.strip()
+    rec = SESSIONS.get(sid)
+    if not rec:
+        raise HTTPException(status_code=404, detail="Unknown session_id")
+
+    if format.lower() == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["turn_index", "ts", "tokens_input", "tokens_total", "kwh", "co2_kg", "water_l"])
+        for t in rec["turns"]:
+            writer.writerow([t["turn_index"], t["ts"], t["tokens_input"], t["tokens_total"], t["kwh"], t["co2_kg"], t["water_l"]])
+        output.seek(0)
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="session_{sid}.csv"'}
+        )
+
+    # default JSON
+    return {
+        "session_id": sid,
+        "totals": _impact_summary(rec),
+        "turns": rec["turns"],
+        "started_at": rec["started_at"],
+        "updated_at": rec["updated_at"],
+    }
+
