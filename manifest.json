@@ -11,7 +11,8 @@
   ],
   "host_permissions": [
     "https://claude.ai/*",
-    "https://api.anthropic.com/*"
+    "https://api.anthropic.com/*",
+    "https://*.onrender.com/*"
   ],
   "content_scripts": [
     {
