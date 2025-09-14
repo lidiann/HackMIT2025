@@ -50,6 +50,38 @@ async function fetchDirectCount(
   return res.json();
 }
 
+async function fetchScore(text) {
+  const res = await fetch(`${API_BASE}/score`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    throw new Error(`Score API failed: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+function persistScore(text, scoreData) {
+  try {
+    chrome.storage.local.get(["edenPromptScores"], (result) => {
+      const scores = result.edenPromptScores || [];
+      const entry = {
+        score: scoreData?.score ?? null,
+        suggestions: scoreData?.suggestions ?? [],
+        signals: scoreData?.signals ?? {},
+        timestamp: new Date().toISOString(),
+        text: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
+      };
+      scores.unshift(entry);
+      if (scores.length > 200) scores.splice(200);
+      chrome.storage.local.set({ edenPromptScores: scores });
+    });
+  } catch (e) {
+    console.warn("[CONTENT] Failed to persist score:", e);
+  }
+}
+
 function sendCount(
   text,
   model = "claude-3-5-haiku-20241022",
@@ -230,6 +262,12 @@ function handleBlur(event) {
           if (history.length > 100) history.splice(100);
           chrome.storage.local.set({ edenUsageHistory: history });
         });
+        // score the prompt in parallel
+        fetchScore(text)
+          .then((scoreData) => persistScore(text, scoreData))
+          .catch((err) =>
+            console.warn("[CONTENT] Score error:", err?.message || err)
+          );
         lastSentValue = text;
       })
       .catch((err) => {
@@ -264,6 +302,11 @@ function handleKeydown(event) {
         if (history.length > 100) history.splice(100);
         chrome.storage.local.set({ edenUsageHistory: history });
       });
+      fetchScore(text)
+        .then((scoreData) => persistScore(text, scoreData))
+        .catch((err) =>
+          console.warn("[CONTENT] Score error:", err?.message || err)
+        );
       lastSentValue = text;
     })
     .catch((err) => {
@@ -299,6 +342,11 @@ function handleDocumentKeydown(event) {
         if (history.length > 100) history.splice(100);
         chrome.storage.local.set({ edenUsageHistory: history });
       });
+      fetchScore(text)
+        .then((scoreData) => persistScore(text, scoreData))
+        .catch((err) =>
+          console.warn("[CONTENT] Score error:", err?.message || err)
+        );
       lastSentValue = text;
     })
     .catch((err) => {
