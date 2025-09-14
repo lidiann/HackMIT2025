@@ -1,0 +1,321 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Chrome Extension Styles */
+[data-mode="popup"] {
+  width: 350px;
+  height: 500px;
+  overflow: hidden;
+}
+
+[data-mode="sidepanel"] {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Extension-specific styling */
+.chrome-extension-container {
+  display: flex;
+  height: 100%;
+}
+
+.chrome-extension-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.chrome-extension-sidebar {
+  width: 60px;
+  background: #f8f9fa;
+  border-left: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 8px;
+}
+
+.chrome-nav-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6c757d;
+}
+
+.chrome-nav-item:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.chrome-nav-active {
+  background: #007bff;
+  color: white;
+}
+
+.extension-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.metric-icon-large {
+  width: 48px;
+  height: 48px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Enhanced glassmorphism sage-pink theme */
+    --background: 142 20% 88%;
+    --foreground: 140 30% 15%;
+
+    --card: 0 0% 100% / 0.15;
+    --card-foreground: 140 30% 15%;
+
+    --popover: 0 0% 100% / 0.95;
+    --popover-foreground: 140 30% 15%;
+
+    --primary: 140 40% 30%;
+    --primary-foreground: 142 25% 95%;
+
+    --secondary: 142 15% 90%;
+    --secondary-foreground: 140 30% 25%;
+
+    --muted: 142 12% 92%;
+    --muted-foreground: 140 20% 45%;
+
+    --accent: 330 45% 75%;
+    --accent-foreground: 140 30% 15%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 142 10% 85%;
+    --input: 142 10% 88%;
+    --ring: 140 40% 45%;
+
+    --radius: 1rem;
+    
+    /* Enhanced glassmorphism effects */
+    --glass-bg: hsla(0, 0%, 100%, 0.25);
+    --glass-bg-strong: hsla(0, 0%, 100%, 0.35);
+    --glass-border: hsla(0, 0%, 100%, 0.3);
+    --glass-shadow: 0 8px 32px hsla(142, 25%, 25%, 0.15);
+    --glass-shadow-strong: 0 12px 40px hsla(142, 25%, 25%, 0.2);
+    
+    /* Neutral accent for navbar */
+    --neutral-accent: 142 15% 50%;
+    --neutral-accent-bg: hsla(142, 15%, 50%, 0.15);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode enhanced glassmorphism */
+    --background: 140 25% 15%;
+    --foreground: 142 25% 95%;
+
+    --card: 0 0% 100% / 0.08;
+    --card-foreground: 142 25% 95%;
+
+    --popover: 140 25% 15%;
+    --popover-foreground: 142 25% 95%;
+
+    --primary: 142 25% 85%;
+    --primary-foreground: 140 25% 15%;
+
+    --secondary: 140 15% 25%;
+    --secondary-foreground: 142 25% 85%;
+
+    --muted: 140 12% 25%;
+    --muted-foreground: 142 15% 65%;
+
+    --accent: 330 45% 65%;
+    --accent-foreground: 142 25% 95%;
+
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 140 12% 30%;
+    --input: 140 12% 30%;
+    --ring: 145 40% 55%;
+    
+    /* Dark mode glassmorphism */
+    --glass-bg: hsla(0, 0%, 100%, 0.08);
+    --glass-bg-strong: hsla(0, 0%, 100%, 0.12);
+    --glass-border: hsla(0, 0%, 100%, 0.15);
+    --glass-shadow: 0 8px 32px hsla(0, 0%, 0%, 0.3);
+    --glass-shadow-strong: 0 12px 40px hsla(0, 0%, 0%, 0.4);
+    
+    --neutral-accent: 142 20% 60%;
+    --neutral-accent-bg: hsla(142, 20%, 60%, 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground;
+    background: hsl(var(--background));
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius);
+  }
+  
+  .glass-button {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-button:hover {
+    background: var(--glass-bg-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  .metric-icon {
+    width: 24px;
+    height: 24px;
+    opacity: 0.8;
+  }
+
+  /* Enhanced Chrome Extension Styles */
+  .chrome-extension-container {
+    max-width: 380px;
+    min-height: 600px;
+    margin: 20px auto;
+    background-image: url('./assets/main-bg-3.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 12px;
+    border-right: 4px solid hsl(var(--neutral-accent));
+    box-shadow: var(--glass-shadow-strong);
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .chrome-extension-content {
+    flex: 1;
+    padding: 16px;
+    padding-right: 8px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .chrome-extension-sidebar {
+    width: 48px;
+    background: var(--neutral-accent-bg);
+    border-left: 1px solid hsla(var(--neutral-accent), 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 8px;
+    backdrop-filter: blur(15px);
+    position: relative;
+    z-index: 2;
+  }
+
+  .chrome-nav-item {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: hsl(var(--muted-foreground));
+    transition: all 0.3s ease;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+  }
+
+  .chrome-nav-item:hover {
+    background: hsla(var(--neutral-accent), 0.2);
+    color: hsl(var(--neutral-accent));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsla(var(--neutral-accent), 0.3);
+  }
+
+  .chrome-nav-active {
+    background: hsla(var(--neutral-accent), 0.25);
+    color: hsl(var(--neutral-accent));
+    box-shadow: 0 4px 12px hsla(var(--neutral-accent), 0.4);
+  }
+
+  .extension-card {
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 12px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 4px 12px hsla(142, 25%, 25%, 0.08);
+    transition: all 0.3s ease;
+  }
+
+  .extension-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px hsla(142, 25%, 25%, 0.12);
+  }
+
+  .metric-icon-large {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+  }
+}

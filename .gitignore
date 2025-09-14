@@ -1,2 +1,4 @@
 .env
-__pycache__/
+__pycache__/HackMIT2025-Front-End/
+node_modules/
+dist/

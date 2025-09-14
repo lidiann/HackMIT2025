@@ -19,7 +19,7 @@ ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "*")  # tighten later
 if not ANTHROPIC_API_KEY:
     raise RuntimeError("Missing ANTHROPIC_API_KEY")
 
-app = FastAPI(title="PromptImpact Proxy")
+app = FastAPI(title="Eden AI Sustainability API")
 
 @app.get("/health")
 def health():
