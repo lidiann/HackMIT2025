@@ -2,13 +2,11 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/MetricCard";
-import { TokenCounter } from "@/components/TokenCounter";
 import { useAIUsage } from "@/hooks/useAIUsage";
-import { Cloud, Droplet, Lightbulb, Home, Shield, Leaf, Calculator } from "lucide-react";
+import { Cloud, Droplet, Lightbulb, Home, Shield, Leaf } from "lucide-react";
 
 export const AIUsageDashboard = () => {
   const [activeTab, setActiveTab] = useState("Today");
-  const [showCalculator, setShowCalculator] = useState(false);
   const location = useLocation();
   const { getFilteredData, getTotals } = useAIUsage();
   
@@ -64,7 +62,6 @@ export const AIUsageDashboard = () => {
 
   const navItems = [
     { icon: Home, path: "/" },
-    { icon: Calculator, path: "#", onClick: () => setShowCalculator(!showCalculator) },
     { icon: Shield, path: "/security" },
     { icon: Leaf, path: "/eco-garden" }
   ];
@@ -74,12 +71,6 @@ export const AIUsageDashboard = () => {
       {/* Main Content */}
       <div className="chrome-extension-content">
         <div className="w-full space-y-4">
-          {/* Calculator Section */}
-          {showCalculator && (
-            <div className="mb-6">
-              <TokenCounter />
-            </div>
-          )}
           {/* Header */}
           <div className="extension-card">
             <div className="mb-3">
@@ -87,7 +78,7 @@ export const AIUsageDashboard = () => {
             </div>
             
             <p className="text-sm text-gray-600 mb-4">
-              What has your AI usage cost the planet?
+              Automatically tracking your Claude.ai environmental impact
             </p>
             
             {/* Time Period Tabs */}
@@ -182,21 +173,7 @@ export const AIUsageDashboard = () => {
       <div className="chrome-extension-sidebar">
         {navItems.map((item, index) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path || (item.path === "#" && showCalculator);
-          
-          if (item.onClick) {
-            return (
-              <button
-                key={index}
-                onClick={item.onClick}
-                className={`chrome-nav-item ${
-                  isActive ? "chrome-nav-active" : ""
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            );
-          }
+          const isActive = location.pathname === item.path;
           
           return (
             <Link key={index} to={item.path}>
