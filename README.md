@@ -2,7 +2,7 @@
 
 A Chrome extension that tracks the environmental impact of AI usage on Claude.ai, built with React, TypeScript, and FastAPI.
 
-## 🌱 Features
+## 🌱 Core Features
 
 - **Real-time Token Counting**: Automatically detects and counts tokens from Claude.ai conversations
 - **Environmental Impact Tracking**: Calculates energy consumption, CO₂ emissions, and water usage
@@ -10,7 +10,7 @@ A Chrome extension that tracks the environmental impact of AI usage on Claude.ai
 - **Chrome Extension**: Works as both popup and sidebar
 - **FastAPI Backend**: Deployed on Render for token counting and environmental calculations
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Node.js (v18 or higher)
