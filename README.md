@@ -2,7 +2,7 @@
 
 A Chrome extension that tracks the environmental impact of AI usage on Claude.ai, built with React, TypeScript, and FastAPI.
 
-## 🌱 Features
+## Features
 
 - **Real-time Token Counting**: Automatically detects and counts tokens from Claude.ai conversations
 - **Environmental Impact Tracking**: Calculates energy consumption, CO₂ emissions, and water usage
@@ -10,7 +10,7 @@ A Chrome extension that tracks the environmental impact of AI usage on Claude.ai
 - **Chrome Extension**: Works as both popup and sidebar
 - **FastAPI Backend**: Deployed on Render for token counting and environmental calculations
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js (v18 or higher)
@@ -99,7 +99,7 @@ HackMIT2025/
 └── requirements.txt              # Python dependencies
 ```
 
-## 🔧 Backend Setup (Optional)
+## Backend Setup (Optional)
 
 If you want to run the backend locally:
 
@@ -116,14 +116,14 @@ python server.py
 
 The extension uses the deployed backend by default at `https://hackmit2025-pf5p.onrender.com`.
 
-## 🎨 Styling
+## Styling
 
 - **Tailwind CSS** for styling
 - **shadcn/ui** components
 - **Responsive design** for popup and sidebar
 - **Dark/light mode** support
 
-## 📱 Chrome Extension Features
+## Chrome Extension Features
 
 ### Popup Mode
 - Click extension icon for quick access
@@ -140,7 +140,7 @@ The extension uses the deployed backend by default at `https://hackmit2025-pf5p.
 - Counts tokens when you send messages
 - Updates dashboard in real-time
 
-## 🚀 Deployment
+## Deployment
 
 ### Frontend (Chrome Extension)
 1. Build: `npm run build`
@@ -152,7 +152,7 @@ The extension uses the deployed backend by default at `https://hackmit2025-pf5p.
 - Environment variables configured
 - Auto-deploys from GitHub
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Extension Not Loading
 - Check `dist/manifest.json` exists
@@ -169,19 +169,12 @@ The extension uses the deployed backend by default at `https://hackmit2025-pf5p.
 - Restart dev server: `npm run dev`
 - Check console for errors
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
 
 ## 📄 License
 
 MIT License - see LICENSE file for details
 
-## 🌟 Acknowledgments
+## Acknowledgments
 
 - Built for HackMIT 2025
 - Uses Anthropic API for token counting
